@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect x="0" y="0" width="1024" height="1024" fill="#0D1117"/>
+  <rect x="172" y="302" width="680" height="420" rx="44" fill="#11161D" stroke="#2A3340" stroke-width="6"/>
+  <circle cx="248" cy="372" r="20" fill="#EF4444"/>
+  <circle cx="304" cy="372" r="20" fill="#F59E0B"/>
+  <circle cx="360" cy="372" r="20" fill="#22C55E"/>
+  <text x="232" y="540" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="96" font-weight="bold" fill="#22C55E">$ ok2merge</text>
+  <rect x="726" y="470" width="52" height="96" fill="#22C55E"/>
+  <path d="M252 620 L292 660 L360 580" fill="none" stroke="#F6F8FA" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="384" y="662" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="44" fill="#8B949E">12 PRs cleared</text>
+</svg>

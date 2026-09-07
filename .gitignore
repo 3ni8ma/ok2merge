@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.DS_Store
+*.pyc
+__pycache__/
+.venv/
+.env
+google-services.json
+GoogleService-Info.plist
+firebase-service-account.json
+ios/App/Pods/
+ios/App/build/
+android/app/build/
+android/.gradle/
+android/local.properties

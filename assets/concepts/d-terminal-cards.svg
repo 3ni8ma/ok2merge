@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect x="0" y="0" width="1024" height="1024" fill="#0D1117"/>
+  <g opacity="0.45">
+    <rect x="112" y="440" width="130" height="32" rx="16" fill="#F6F8FA"/>
+    <rect x="76" y="508" width="166" height="32" rx="16" fill="#F6F8FA"/>
+    <rect x="112" y="576" width="130" height="32" rx="16" fill="#F6F8FA"/>
+  </g>
+  <g transform="rotate(-10 560 500)">
+    <rect x="360" y="300" width="420" height="330" rx="52" fill="#1B2330"/>
+    <circle cx="424" cy="368" r="19" fill="#EF4444"/>
+    <circle cx="478" cy="368" r="19" fill="#F59E0B"/>
+    <circle cx="532" cy="368" r="19" fill="#22C55E"/>
+    <rect x="420" y="420" width="220" height="34" rx="17" fill="#22C55E" opacity="0.55"/>
+    <rect x="420" y="480" width="150" height="34" rx="17" fill="#8B949E" opacity="0.5"/>
+  </g>
+  <g transform="rotate(-2 580 540)">
+    <rect x="400" y="440" width="430" height="330" rx="52" fill="#F6F8FA"/>
+    <text x="452" y="660" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="170" font-weight="bold" fill="#22C55E">$</text>
+    <path d="M595 580 L650 635 L765 500" fill="none" stroke="#22C55E" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <path d="M688 830 C 770 830 812 790 852 728" fill="none" stroke="#22C55E" stroke-width="38" stroke-linecap="round"/>
+  <path d="M806 724 H854 V772" fill="none" stroke="#22C55E" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
