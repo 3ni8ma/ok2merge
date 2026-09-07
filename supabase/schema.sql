@@ -57,3 +57,18 @@ alter table summary_cache enable row level security;
 alter table entitlements enable row level security;
 alter table idempotency_keys enable row level security;
 -- v1 access is service-role only (backend); no public policies by design.
+
+-- Vault helpers (service-role only via security definer).
+-- NOTE: inserts MUST go through the built-in vault.create_secret: raw inserts
+-- into vault.secrets fail with permission errors on pgsodium internals.
+create or replace function vault_create_secret(p_secret text) returns uuid
+language plpgsql security definer as $$
+declare sid uuid; begin
+  select vault.create_secret(p_secret) into sid;
+  return sid; end $$;
+
+create or replace function vault_read_secret(p_secret_id uuid) returns text
+language plpgsql security definer as $$
+declare s text; begin
+  select decrypted_secret into s from vault.decrypted_secrets where id = p_secret_id;
+  return s; end $$;

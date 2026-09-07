@@ -3,9 +3,11 @@ import logging
 from fastapi import Depends, FastAPI
 
 from .deps import get_current_user
+from .routes import github_connect
 
 logging.basicConfig(level=logging.INFO)
 app = FastAPI()
+app.include_router(github_connect.router)
 
 
 @app.get("/health")
