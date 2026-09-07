@@ -1,0 +1,11 @@
+{
+  "": {
+    "swift-dependencies": "/Users/aarushkarak/Coding Projects/pr-swipe/plugins/widget-bridge/.build/index-build/arm64-apple-macosx/debug/WidgetBridgePlugin.build/primary.swiftdeps"
+  },
+  "/Users/aarushkarak/Coding Projects/pr-swipe/plugins/widget-bridge/ios/Sources/WidgetBridgePlugin/WidgetBridge.swift": {
+    "dependencies": "/Users/aarushkarak/Coding Projects/pr-swipe/plugins/widget-bridge/.build/index-build/arm64-apple-macosx/debug/WidgetBridgePlugin.build/WidgetBridge.d",
+    "object": "/Users/aarushkarak/Coding Projects/pr-swipe/plugins/widget-bridge/.build/index-build/arm64-apple-macosx/debug/WidgetBridgePlugin.build/WidgetBridge.swift.o",
+    "swiftmodule": "/Users/aarushkarak/Coding Projects/pr-swipe/plugins/widget-bridge/.build/index-build/arm64-apple-macosx/debug/WidgetBridgePlugin.build/WidgetBridge~partial.swiftmodule",
+    "swift-dependencies": "/Users/aarushkarak/Coding Projects/pr-swipe/plugins/widget-bridge/.build/index-build/arm64-apple-macosx/debug/WidgetBridgePlugin.build/WidgetBridge.swiftdeps",
+    "diagnostics": "/Users/aarushkarak/Coding Projects/pr-swipe/plugins/widget-bridge/.build/index-build/arm64-apple-macosx/debug/WidgetBridgePlugin.build/WidgetBridge.dia"  }
+}
