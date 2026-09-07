@@ -1,0 +1,10 @@
+diff --git a/api/app/routes/prs.py b/api/app/routes/prs.py
+index 0000000..1111111 100644
+--- a/api/app/routes/prs.py
++++ b/api/app/routes/prs.py
+@@ -1,3 +1,6 @@
++import httpx
+ from fastapi import APIRouter, Depends, HTTPException, Query
++
++DIFF_LIMIT = 12000
++BETA_DAILY_CAP = 50
