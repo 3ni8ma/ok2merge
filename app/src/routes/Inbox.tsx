@@ -5,11 +5,15 @@ import { writeSnapshot } from "../lib/widgetSync";
 import { C } from "../theme";
 import type { PR, ReviewEvent } from "../components/InboxDeck";
 import { Deck } from "../components/Deck";
+import { ReviewSheet } from "../components/ReviewSheet";
 
 export default function Inbox() {
   const [prs, setPrs] = useState<PR[] | null>(null);
   const [offline, setOffline] = useState(!navigator.onLine);
   const [unlinked, setUnlinked] = useState(false);
+  const [pending, setPending] = useState<{ pr: PR; event: ReviewEvent } | null>(
+    null
+  );
 
   useEffect(() => {
     api
@@ -31,8 +35,8 @@ export default function Inbox() {
     };
   }, []);
 
-  function onSwipe(_pr: PR, _event: ReviewEvent) {
-    // Task 13 wires the confirm sheet + POST here.
+  function onSwipe(pr: PR, event: ReviewEvent) {
+    setPending({ pr, event });
   }
 
   if (unlinked) return <div>GitHub not connected — finish onboarding.</div>;
@@ -46,6 +50,13 @@ export default function Inbox() {
         </div>
       )}
       <Deck prs={prs} onSwipe={offline ? () => {} : onSwipe} />
+      {pending && (
+        <ReviewSheet
+          pr={pending.pr}
+          event={pending.event}
+          onDone={() => setPending(null)}
+        />
+      )}
     </div>
   );
 }
