@@ -1,0 +1,30 @@
+{
+  "name": "widget-bridge",
+  "version": "1.0.0",
+  "description": "OK2Merge widget snapshot bridge (App Groups / named prefs)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "ios/",
+    "android/"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    },
+    "android": {
+      "src": "android"
+    }
+  },
+  "peerDependencies": {
+    "@capacitor/core": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/core": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}

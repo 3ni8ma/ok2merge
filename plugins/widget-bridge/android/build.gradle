@@ -1,0 +1,14 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace "app.ok2merge.bridge"
+    compileSdk 35
+    defaultConfig {
+        minSdkVersion 24
+        targetSdkVersion 35
+    }
+}
+
+dependencies {
+    implementation project(':capacitor-android')
+}
