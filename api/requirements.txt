@@ -1,0 +1,9 @@
+fastapi==0.115.*
+uvicorn==0.30.*
+httpx==0.28.*
+supabase==2.31.*
+google-genai==2.22.*
+firebase-admin==6.5.*
+pytest==8.3.*
+respx==0.22.*
+PyJWT==2.12.*
