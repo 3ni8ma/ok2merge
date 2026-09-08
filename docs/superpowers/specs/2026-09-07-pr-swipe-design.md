@@ -1,4 +1,4 @@
-# OK2Merge — Design Spec (2026-09-07, rev 6: v2 tabs + merge + brand)
+# OK2Merge — Design Spec (2026-09-07, rev 7: v4 triage power)
 
 Zero-spend app for mobile-first PR review: swipe to approve, human-confirmed merge. PWA primary (iOS via Safari install, Android via Chrome) + Android sideload APK from GitHub Releases. GitHub-only v1, free beta, paid later via web payments. App Store + Play listings deferred until revenue pays the ~$125 first year.
 
@@ -92,3 +92,10 @@ Components (one job each):
 - Push fans out to the requested reviewer AND the PR author (both resolved via stored logins).
 - Brand in-app: seal logo component (header, splash, empty states), Space Grotesk headers, swipe glow + card-stack motion, stale-age red, CI dots.
 - Still out: comment threads UI, rebase/conflicts, org analytics.
+
+## 8. v4: triage power (approved — all four areas)
+
+- **Deeper review power:** CI checks per PR with one-tap re-run of failed jobs (Actions runs API — directly re-runnable, unlike raw check-runs), re-request reviewers by username, add/remove labels inline on cards, author avatars on every card.
+- **Stats and insights:** Insights tab computed client-side from loaded lists — PRs opened/merged/reviews done, avg time-to-merge, top-repos bars. No new backend.
+- **Team triage:** bulk approve (select mode + sequential idempotent POSTs), 24h snooze (local, per-PR), Mentions tab (`involves:@me` — `mentions:` doesn't support `@me`).
+- **Power-user kit:** saved named filters (localStorage, right-click deletes), keyboard shortcuts (`/` search, `1–5` tabs), notification fan-out to authors, generous error states. Offline approve-queue explicitly rejected (a queued approval firing later violates the swipe-is-the-action contract).
