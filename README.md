@@ -5,9 +5,9 @@ Mobile PR inbox: swipe to approve, biometric to merge. Spec: `docs/superpowers/s
 ## External accounts (human checklist — cannot be automated)
 - [ ] Apple Developer Program ($99/yr) — TestFlight + App Store
 - [ ] Google Play Console ($25 one-time) + Payments merchant profile
-- [ ] Supabase project (record URL + anon key + service-role key)
-- [ ] GitHub OAuth App (scopes: `repo`; callback = Supabase auth callback URL)
+- [x] Supabase project (ok2merge — live, schema + Vault helpers applied)
+- [x] GitHub OAuth App (OK2Merge, `repo` scope; callback = Supabase; provider enabled, manual linking on)
 - [ ] RevenueCat project (Apple + Google apps, shared webhook secret)
-- [ ] Xcode + Android Studio (builds run locally; no cloud-build service in v1)
+- [ ] Xcode + Android SDK (this machine has neither — native compile/device runs pending)
 - [ ] Firebase project with FCM enabled: `google-services.json`, `GoogleService-Info.plist`, backend service-account JSON
 - [ ] Apple Service ID for Sign in with Apple on Android/web (Client ID for `VITE_APPLE_SERVICE_ID`)
