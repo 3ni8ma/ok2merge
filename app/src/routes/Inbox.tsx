@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { api } from "../lib/api";
+import { supabase } from "../lib/supabase";
 import { writeSnapshot } from "../lib/widgetSync";
 import { C } from "../theme";
 import type { PR, ReviewEvent } from "../components/InboxDeck";
@@ -8,6 +10,7 @@ import { Deck } from "../components/Deck";
 import { ReviewSheet } from "../components/ReviewSheet";
 
 export default function Inbox() {
+  const nav = useNavigate();
   const [prs, setPrs] = useState<PR[] | null>(null);
   const [offline, setOffline] = useState(!navigator.onLine);
   const [unlinked, setUnlinked] = useState(false);
@@ -18,9 +21,17 @@ export default function Inbox() {
 
   function load() {
     setFailed("");
-    api
-      .inbox()
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!data.session) {
+          nav("/onboarding"); // logged out: inbox has nothing to show
+          return null;
+        }
+        return api.inbox();
+      })
       .then((d) => {
+        if (!d) return;
         setPrs(d.prs);
         writeSnapshot({ count: d.prs.length, oldestAgeMin: 0, ciFails: 0 });
       })

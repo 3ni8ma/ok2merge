@@ -22,6 +22,7 @@ async function authed(path: string, init: RequestInit = {}) {
   } catch (e: any) {
     if (e?.name === "AbortError")
       throw new Error(`${init.method ?? "GET"} ${path} -> timed out`);
+    if (e instanceof Error && e.message.includes(" -> ")) throw e; // already formatted
     throw new Error(
       `${init.method ?? "GET"} ${path} -> ${e?.message ?? "network error"}`
     );
