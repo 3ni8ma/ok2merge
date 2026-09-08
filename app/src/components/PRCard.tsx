@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { PR } from "./InboxDeck";
 import { ageParts, stateLabel } from "../lib/prDisplay";
 import { C } from "../theme";
+import { ClockIcon, MessageIcon } from "./icons";
 
 const STATE_COLORS: Record<string, string> = {
   open: "#22C55E",
@@ -23,8 +24,27 @@ export function PRCard({ pr }: { pr: PR }) {
         borderLeft: `4px solid ${STATE_COLORS[state] ?? C.muted}`,
       }}
     >
-      <div style={{ color: C.muted, fontSize: 13 }}>
-        {pr.repo} #{pr.number} · by {pr.author}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          color: C.muted,
+          fontSize: 13,
+        }}
+      >
+        {pr.author_avatar ? (
+          <img
+            src={pr.author_avatar}
+            alt={pr.author}
+            width={22}
+            height={22}
+            style={{ borderRadius: "50%" }}
+          />
+        ) : null}
+        <span>
+          {pr.repo} #{pr.number} · by {pr.author}
+        </span>
       </div>
       <Link
         to={`/pr/${pr.repo}/${pr.number}?sha=${pr.head_sha}`}
@@ -32,14 +52,39 @@ export function PRCard({ pr }: { pr: PR }) {
           color: C.paper,
           fontSize: 18,
           fontFamily: "Space Grotesk, sans-serif",
+          textDecoration: "none",
+          display: "block",
+          marginTop: 6,
         }}
       >
         {pr.title}
       </Link>
-      <div style={{ display: "flex", gap: 8, marginTop: 8, fontSize: 12 }}>
-        <span style={{ color: STATE_COLORS[state] ?? C.muted }}>{state}</span>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          marginTop: 10,
+          fontSize: 12,
+          alignItems: "center",
+        }}
+      >
+        <span
+          style={{
+            color: STATE_COLORS[state] ?? C.muted,
+            border: `1px solid ${STATE_COLORS[state] ?? C.muted}`,
+            borderRadius: 999,
+            padding: "2px 10px",
+            textTransform: "uppercase",
+            letterSpacing: 1,
+            fontSize: 11,
+          }}
+        >
+          {state}
+        </span>
         {typeof pr.comments === "number" && (
-          <span style={{ color: C.muted }}>💬 {pr.comments}</span>
+          <span style={{ color: C.muted }}>
+            <MessageIcon size={14} /> {pr.comments}
+          </span>
         )}
         {typeof pr.additions === "number" && (
           <span style={{ color: C.muted }}>
@@ -48,7 +93,9 @@ export function PRCard({ pr }: { pr: PR }) {
           </span>
         )}
         {age.text && (
-          <span style={{ color: age.stale ? C.red : C.muted }}>{age.text}</span>
+          <span style={{ color: age.stale ? C.red : C.muted }}>
+            <ClockIcon size={14} /> {age.text}
+          </span>
         )}
       </div>
     </div>

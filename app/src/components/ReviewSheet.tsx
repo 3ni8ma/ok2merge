@@ -53,6 +53,20 @@ export function ReviewSheet({
   return (
     <div style={{ background: "#161B22", borderRadius: "16px 16px 0 0", padding: 16 }}>
       <p style={{ color: C.paper }}>{confirmText(event, ref)}</p>
+      <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+        {(event === "APPROVE"
+          ? ["LGTM — nice work", "Approved with nits"]
+          : ["Needs changes — see comments", "Blocking: tests failing"]
+        ).map((preset) => (
+          <button
+            key={preset}
+            onClick={() => setBody(preset)}
+            style={{ background: "#0D1117", color: C.paper, fontSize: 13 }}
+          >
+            {preset}
+          </button>
+        ))}
+      </div>
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}

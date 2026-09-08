@@ -20,7 +20,7 @@ def test_inbox_maps_search_items(client, auth_header, respx_mock, monkeypatch):
         200,
         json={
             "head": {"sha": "abc123"},
-            "user": {"login": "octo"},
+            "user": {"login": "octo", "avatar_url": "https://example.com/octo.png"},
             "state": "open",
             "draft": False,
             "merged_at": None,
@@ -45,6 +45,7 @@ def test_inbox_maps_search_items(client, auth_header, respx_mock, monkeypatch):
     assert pr["number"] == 7
     assert pr["title"] == "SYNTHETIC fixture item (runtime-injected)"
     assert pr["author"] == "octo"
+    assert pr["author_avatar"] == "https://example.com/octo.png"
     assert pr["head_sha"] == "abc123"
     assert pr["state"] == "open"
     assert pr["comments"] == 3

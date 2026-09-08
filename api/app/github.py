@@ -31,6 +31,7 @@ def _enrich(c: httpx.Client, items: list) -> list:
                 "number": num,
                 "title": it["title"],
                 "author": it["user"]["login"],
+                "author_avatar": pr["user"].get("avatar_url"),
                 "head_sha": pr["head"]["sha"],
                 "state": "merged"
                 if pr.get("merged_at")

@@ -9,7 +9,7 @@ ITEM = {
 
 PULL = {
     "head": {"sha": "abc123"},
-    "user": {"login": "octo"},
+    "user": {"login": "octo", "avatar_url": "https://example.com/octo.png"},
     "state": "open",
     "draft": False,
     "merged_at": None,

@@ -5,6 +5,7 @@ export interface PR {
   number: number;
   title: string;
   author: string;
+  author_avatar?: string | null;
   head_sha: string;
   state?: string;
   draft?: boolean;

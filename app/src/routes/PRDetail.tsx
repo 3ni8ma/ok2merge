@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { api } from "../lib/api";
 import { C } from "../theme";
+import { AlertIcon, CheckCircleIcon, LinkIcon, MergeIcon } from "../components/icons";
 
 interface FileChange {
   filename: string;
@@ -23,9 +24,23 @@ export default function PRDetail() {
   >({ kind: "loading" });
 
   const [files, setFiles] = useState<FileChange[] | null>(null);
+  const [copied, setCopied] = useState(false);
   const [mergeState, setMergeState] = useState<
     "idle" | "working" | "merged" | "already" | "failed"
   >("idle");
+
+  const [owner, repo, n] = (rest ?? "").split("/");
+  const fullRepo = `${owner}/${repo}`;
+
+  function copyLink() {
+    navigator.clipboard
+      ?.writeText(`https://github.com/${fullRepo}/pull/${n}`)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
+  }
 
   function load() {
     setState({ kind: "loading" });
@@ -76,6 +91,19 @@ export default function PRDetail() {
     return <button onClick={state.retry}>Retry summary</button>;
   return (
     <div style={{ background: C.ink, color: C.paper, padding: 16, minHeight: "100dvh" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <MergeIcon size={20} />
+        <span style={{ color: C.muted }}>
+          {fullRepo}#{n}
+        </span>
+        <button
+          onClick={copyLink}
+          style={{ background: "#161B22", color: C.paper, fontSize: 13 }}
+          aria-label="Copy PR link"
+        >
+          <LinkIcon size={14} /> {copied ? "Copied" : "Copy link"}
+        </button>
+      </div>
       {state.partial && (
         <div style={{ color: C.amber }}>Partial summary (first files only).</div>
       )}
@@ -100,14 +128,18 @@ export default function PRDetail() {
         )}
         {mergeState === "working" && <span>Merging…</span>}
         {mergeState === "merged" && (
-          <span style={{ color: C.merge }}>✅ Merged.</span>
+          <span style={{ color: C.merge }}>
+            <CheckCircleIcon size={16} /> Merged.
+          </span>
         )}
         {mergeState === "already" && (
           <span style={{ color: C.amber }}>Already merged.</span>
         )}
         {mergeState === "failed" && (
           <>
-            <span style={{ color: C.red }}>Merge failed (not green yet?). </span>
+            <span style={{ color: C.red }}>
+              <AlertIcon size={16} /> Merge failed (not green yet?).{" "}
+            </span>
             <button onClick={doMerge}>Retry</button>
           </>
         )}
