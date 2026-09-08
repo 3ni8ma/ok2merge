@@ -5,11 +5,16 @@ from pydantic import BaseModel
 from ..ai import summarize
 from ..deps import get_current_user
 from ..github import (
+    get_check_runs,
     get_pr_files,
     merge_pr,
+    rerun_failed,
+    request_reviewers,
     search_authored,
+    search_mentions,
     search_review_requested,
     search_reviewed,
+    set_labels,
 )
 from ..store import read_github_token, sb
 
@@ -42,6 +47,11 @@ def activity(user_id: str = Depends(get_current_user)):
     return _authed_search(user_id, search_reviewed)
 
 
+@router.get("/api/prs/mentions")
+def mentions(user_id: str = Depends(get_current_user)):
+    return _authed_search(user_id, search_mentions)
+
+
 @router.get("/api/prs/{owner}/{repo}/{n}/files")
 def files(owner: str, repo: str, n: int, user_id: str = Depends(get_current_user)):
     found = read_github_token(user_id)
@@ -54,6 +64,66 @@ def files(owner: str, repo: str, n: int, user_id: str = Depends(get_current_user
 class MergeBody(BaseModel):
     repo: str
     number: int
+
+
+class ReviewersBody(BaseModel):
+    repo: str
+    number: int
+    reviewers: list[str]
+
+
+class LabelsBody(BaseModel):
+    repo: str
+    number: int
+    labels: list[str]
+
+
+class RerunBody(BaseModel):
+    repo: str
+    run_id: int
+
+
+def _authed_token(user_id: str) -> str:
+    found = read_github_token(user_id)
+    if not found:
+        raise HTTPException(409, "github not connected")
+    return found[0]
+
+
+@router.get("/api/prs/{owner}/{repo}/{n}/checks")
+def checks(
+    owner: str, repo: str, n: int, sha: str = Query(...),
+    user_id: str = Depends(get_current_user),
+):
+    token = _authed_token(user_id)
+    return {"runs": get_check_runs(token, f"{owner}/{repo}", sha)}
+
+
+@router.post("/api/prs/rerun")
+def rerun(b: RerunBody, user_id: str = Depends(get_current_user)):
+    token = _authed_token(user_id)
+    try:
+        return rerun_failed(token, b.repo, b.run_id)
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(502, f"github rejected rerun: {e.response.status_code}")
+
+
+@router.post("/api/prs/reviewers")
+def reviewers(b: ReviewersBody, user_id: str = Depends(get_current_user)):
+    token = _authed_token(user_id)
+    try:
+        return request_reviewers(token, b.repo, b.number, b.reviewers)
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(502, f"github rejected reviewers: {e.response.status_code}")
+
+
+@router.put("/api/prs/labels")
+def labels(b: LabelsBody, user_id: str = Depends(get_current_user)):
+    token = _authed_token(user_id)
+    try:
+        return set_labels(token, b.repo, b.number, b.labels)
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(502, f"github rejected labels: {e.response.status_code}")
 
 
 @router.post("/api/prs/merge")

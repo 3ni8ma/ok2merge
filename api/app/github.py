@@ -44,6 +44,7 @@ def _enrich(c: httpx.Client, items: list) -> list:
                 "deletions": pr.get("deletions", 0),
                 "changed_files": pr.get("changed_files", 0),
                 "mergeable_state": pr.get("mergeable_state"),
+                "labels": [label["name"] for label in pr.get("labels", [])],
             }
         )
     return out
@@ -73,6 +74,52 @@ def search_authored(token: str, login: str) -> list:
 
 def search_reviewed(token: str, login: str) -> list:
     return _search(token, login, "reviewed-by")
+
+
+def search_mentions(token: str, login: str) -> list:
+    # `involves:` (mentions, assignments, authorship) supports @me; `mentions:` does not.
+    return _search(token, login, "involves")
+
+
+def get_check_runs(token: str, owner_repo: str, sha: str) -> list:
+    """Workflow runs for a commit — directly re-runnable, unlike raw check-runs."""
+    with gh(token) as c:
+        runs = c.get(
+            f"/repos/{owner_repo}/actions/runs", params={"head_sha": sha}
+        ).json()["workflow_runs"]
+        return [
+            {
+                "id": r["id"],
+                "name": r["name"],
+                "status": r["status"],
+                "conclusion": r.get("conclusion"),
+            }
+            for r in runs
+        ]
+
+
+def rerun_failed(token: str, owner_repo: str, run_id: int) -> dict:
+    with gh(token) as c:
+        r = c.post(f"/repos/{owner_repo}/actions/runs/{run_id}/rerun-failed-jobs")
+        r.raise_for_status()
+        return {"ok": True}
+
+
+def request_reviewers(token: str, owner_repo: str, n: int, reviewers: list) -> dict:
+    with gh(token) as c:
+        r = c.post(
+            f"/repos/{owner_repo}/pulls/{n}/requested_reviewers",
+            json={"reviewers": reviewers},
+        )
+        r.raise_for_status()
+        return {"ok": True}
+
+
+def set_labels(token: str, owner_repo: str, n: int, labels: list) -> dict:
+    with gh(token) as c:
+        r = c.put(f"/repos/{owner_repo}/issues/{n}/labels", json={"labels": labels})
+        r.raise_for_status()
+        return {"ok": True, "labels": [label["name"] for label in r.json()]}
 
 
 def get_pr_files(token: str, owner_repo: str, n: int) -> list:
