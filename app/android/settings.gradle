@@ -1,5 +1,8 @@
 include ':app'
 include ':capacitor-cordova-android-plugins'
 project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
+// Static pin: widget-bridge native module, independent of cap-sync regeneration.
+include ':widget-bridge'
+project(':widget-bridge').projectDir = new File('../../plugins/widget-bridge/android')
 
 apply from: 'capacitor.settings.gradle'

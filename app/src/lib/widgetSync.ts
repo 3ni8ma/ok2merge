@@ -1,4 +1,4 @@
-import { writeSnapshot as bridgeWrite } from "widget-bridge";
+import { writeSnapshot as bridgeWrite } from "./widget-bridge";
 
 export function writeSnapshot(s: {
   count: number;

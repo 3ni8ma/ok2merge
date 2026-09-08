@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { shapeSnapshot } from "widget-bridge";
+import { shapeSnapshot } from "../lib/widget-bridge";
 
 describe("widget-bridge", () => {
   test("snapshot carries updatedAt", () => {

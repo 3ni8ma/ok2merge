@@ -25,6 +25,3 @@ project(':capawesome-capacitor-apple-sign-in').projectDir = new File('../node_mo
 
 include ':revenuecat-purchases-capacitor'
 project(':revenuecat-purchases-capacitor').projectDir = new File('../node_modules/@revenuecat/purchases-capacitor/android')
-
-include ':widget-bridge'
-project(':widget-bridge').projectDir = new File('../../plugins/widget-bridge/android')
