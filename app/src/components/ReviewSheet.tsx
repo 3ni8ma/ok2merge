@@ -31,6 +31,7 @@ export function ReviewSheet({
     try {
       const ok = await confirmHuman("Confirm approval");
       if (!ok) {
+        setError("Couldn't confirm it's you on this device — approvals need biometrics.");
         setBusy(false);
         return;
       }
