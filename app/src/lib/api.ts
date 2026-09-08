@@ -1,18 +1,33 @@
 const BASE = import.meta.env.VITE_API_URL!;
 
+const TIMEOUT_MS = 30000;
+
 async function authed(path: string, init: RequestInit = {}) {
   const { supabase } = await import("./supabase");
   const { data } = await supabase.auth.getSession();
-  const r = await fetch(BASE + path, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${data.session?.access_token ?? ""}`,
-      ...(init.headers ?? {}),
-    },
-  });
-  if (!r.ok) throw new Error(`${init.method ?? "GET"} ${path} -> ${r.status}`);
-  return r.json();
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+    const r = await fetch(BASE + path, {
+      ...init,
+      signal: ctrl.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${data.session?.access_token ?? ""}`,
+        ...(init.headers ?? {}),
+      },
+    });
+    if (!r.ok) throw new Error(`${init.method ?? "GET"} ${path} -> ${r.status}`);
+    return r.json();
+  } catch (e: any) {
+    if (e?.name === "AbortError")
+      throw new Error(`${init.method ?? "GET"} ${path} -> timed out`);
+    throw new Error(
+      `${init.method ?? "GET"} ${path} -> ${e?.message ?? "network error"}`
+    );
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export const api = {

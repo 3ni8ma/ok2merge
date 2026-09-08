@@ -11,11 +11,13 @@ export default function Inbox() {
   const [prs, setPrs] = useState<PR[] | null>(null);
   const [offline, setOffline] = useState(!navigator.onLine);
   const [unlinked, setUnlinked] = useState(false);
+  const [failed, setFailed] = useState("");
   const [pending, setPending] = useState<{ pr: PR; event: ReviewEvent } | null>(
     null
   );
 
-  useEffect(() => {
+  function load() {
+    setFailed("");
     api
       .inbox()
       .then((d) => {
@@ -25,7 +27,12 @@ export default function Inbox() {
       .catch((e: Error) => {
         if (e.message.includes("409")) setUnlinked(true);
         else if (!navigator.onLine) setOffline(true);
+        else setFailed(e.message);
       });
+  }
+
+  useEffect(() => {
+    load();
     const on = () => setOffline(!navigator.onLine);
     window.addEventListener("online", on);
     window.addEventListener("offline", on);
@@ -33,6 +40,7 @@ export default function Inbox() {
       window.removeEventListener("online", on);
       window.removeEventListener("offline", on);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function onSwipe(pr: PR, event: ReviewEvent) {
@@ -53,7 +61,15 @@ export default function Inbox() {
       <div
         style={{ background: C.ink, color: C.paper, minHeight: "100dvh", padding: 24 }}
       >
-        Loading review inbox…
+        {failed ? (
+          <>
+            <p>Couldn't reach the review server.</p>
+            <p style={{ color: C.muted, fontSize: 13 }}>{failed}</p>
+            <button onClick={load}>Retry</button>
+          </>
+        ) : (
+          "Loading review inbox…"
+        )}
       </div>
     );
   return (
