@@ -1,4 +1,4 @@
-# OK2Merge — Design Spec (2026-09-07, rev 5: free-first)
+# OK2Merge — Design Spec (2026-09-07, rev 6: v2 tabs + merge + brand)
 
 Zero-spend app for mobile-first PR review: swipe to approve, human-confirmed merge. PWA primary (iOS via Safari install, Android via Chrome) + Android sideload APK from GitHub Releases. GitHub-only v1, free beta, paid later via web payments. App Store + Play listings deferred until revenue pays the ~$125 first year.
 
@@ -83,4 +83,12 @@ Components (one job each):
 - New pieces: `WidgetExtension` (native widget target in the Gradle project — the snapshot crosses via a tiny custom plugin writing a named prefs file) + snapshot writer in the web app. (iOS App Groups variant stays specified in the plan for the store return.)
 - Flow: every inbox fetch and every review push writes `{count, oldestAge, ciFails, updatedAt}` to the shared store; the widget timeline renders from that snapshot; taps deep-link into the inbox.
 - Honesty: the widget always shows "updated Xm ago" and a distinct stale state past N minutes — it never implies live data, and nothing fires from it.
-- Test: on-device light/dark, both sizes, stale rendering, tap-through; snapshot writes covered by unit tests.
+- Test: on-device light/dark, both sizes, stale rendering, tap-through; snapshot writes covered by unit tests. (iOS-unverified until the store return; Android path proven in the release APK.)
+
+## 7. v2: tabs, authored PRs, merge, brand (approved)
+
+- Three tabs sharing one enriched PR model: **Needs Review** (`review-requested:@me`), **My PRs** (`author:@me`, any state), **Done** (`reviewed-by:@me` + merged authored). List items carry state (open/draft/merged/closed), CI, comment counts, age, additions/deletions — one pulls-API fetch per open PR, same 60s cache discipline as the inbox.
+- **Merge when green**: `POST` merge proxy; UI-gated to approved + clean PRs; already-merged (405) maps to a friendly outcome, never an error screen.
+- Push fans out to the requested reviewer AND the PR author (both resolved via stored logins).
+- Brand in-app: seal logo component (header, splash, empty states), Space Grotesk headers, swipe glow + card-stack motion, stale-age red, CI dots.
+- Still out: comment threads UI, rebase/conflicts, org analytics.

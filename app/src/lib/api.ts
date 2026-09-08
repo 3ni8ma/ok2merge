@@ -33,8 +33,13 @@ async function authed(path: string, init: RequestInit = {}) {
 
 export const api = {
   inbox: () => authed("/api/prs"),
+  authored: () => authed("/api/prs/authored"),
+  activity: () => authed("/api/prs/activity"),
   summary: (repo: string, n: number, sha: string) =>
     authed(`/api/prs/${repo}/${n}/summary?sha=${sha}`),
+  files: (repo: string, n: number) => authed(`/api/prs/${repo}/${n}/files`),
+  merge: (b: object) =>
+    authed("/api/prs/merge", { method: "POST", body: JSON.stringify(b) }),
   review: (b: object) =>
     authed("/api/reviews", { method: "POST", body: JSON.stringify(b) }),
   githubConnect: (b: object) =>
