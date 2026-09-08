@@ -16,6 +16,7 @@ export interface PR {
   deletions?: number;
   changed_files?: number;
   mergeable_state?: string | null;
+  labels?: string[];
 }
 
 const THRESHOLD = 120;

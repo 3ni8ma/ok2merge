@@ -38,6 +38,15 @@ export const api = {
   summary: (repo: string, n: number, sha: string) =>
     authed(`/api/prs/${repo}/${n}/summary?sha=${sha}`),
   files: (repo: string, n: number) => authed(`/api/prs/${repo}/${n}/files`),
+  checks: (repo: string, n: number, sha: string) =>
+    authed(`/api/prs/${repo}/${n}/checks?sha=${sha}`),
+  rerun: (b: object) =>
+    authed("/api/prs/rerun", { method: "POST", body: JSON.stringify(b) }),
+  reviewers: (b: object) =>
+    authed("/api/prs/reviewers", { method: "POST", body: JSON.stringify(b) }),
+  labels: (b: object) =>
+    authed("/api/prs/labels", { method: "PUT", body: JSON.stringify(b) }),
+  mentions: () => authed("/api/prs/mentions"),
   merge: (b: object) =>
     authed("/api/prs/merge", { method: "POST", body: JSON.stringify(b) }),
   review: (b: object) =>

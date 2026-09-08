@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { PR } from "./InboxDeck";
@@ -12,9 +13,18 @@ const STATE_COLORS: Record<string, string> = {
   closed: "#EF4444",
 };
 
-export function PRCard({ pr }: { pr: PR }) {
+export function PRCard({
+  pr,
+  onLabelsChange,
+}: {
+  pr: PR;
+  onLabelsChange?: (labels: string[]) => void;
+}) {
   const age = ageParts(pr.created_at);
   const state = stateLabel(pr);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const labels = pr.labels ?? [];
   return (
     <div
       style={{
@@ -98,6 +108,63 @@ export function PRCard({ pr }: { pr: PR }) {
           </span>
         )}
       </div>
+      {(labels.length > 0 || onLabelsChange) && (
+        <div
+          style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}
+        >
+          {labels.map((l) => (
+            <button
+              key={l}
+              onClick={() =>
+                onLabelsChange?.(labels.filter((x) => x !== l))
+              }
+              title={onLabelsChange ? "Tap to remove" : l}
+              style={{
+                background: "#0D1117",
+                color: C.paper,
+                fontSize: 11,
+                padding: "2px 10px",
+              }}
+            >
+              {l}{onLabelsChange ? " ×" : ""}
+            </button>
+          ))}
+          {onLabelsChange &&
+            (adding ? (
+              <span style={{ display: "flex", gap: 4 }}>
+                <input
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="label"
+                  style={{ width: 100, padding: 4, fontSize: 12 }}
+                  aria-label="New label"
+                />
+                <button
+                  onClick={() => {
+                    const name = draft.trim();
+                    if (name) onLabelsChange([...labels, name]);
+                    setDraft("");
+                    setAdding(false);
+                  }}
+                  style={{ fontSize: 12, padding: "4px 10px" }}
+                >
+                  Add
+                </button>
+              </span>
+            ) : (
+              <button
+                onClick={() => setAdding(true)}
+                style={{
+                  background: "transparent",
+                  color: C.muted,
+                  fontSize: 11,
+                }}
+              >
+                + label
+              </button>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

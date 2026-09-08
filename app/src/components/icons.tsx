@@ -168,3 +168,22 @@ export function PartyIcon({ size }: IconProps) {
     </Base>
   );
 }
+
+export function ChartIcon({ size }: IconProps) {
+  return (
+    <Base size={size}>
+      <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+      <path d="M7 13l3 3 7-7" />
+    </Base>
+  );
+}
+
+export function SnoozeIcon({ size }: IconProps) {
+  return (
+    <Base size={size}>
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 9v4l2.5 2.5" />
+      <path d="M9 2h6" />
+    </Base>
+  );
+}
