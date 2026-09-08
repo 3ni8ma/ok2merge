@@ -41,39 +41,42 @@ async def github_hook(
     ):
         return {"ok": True, "ignored": True}
     payload = await request.json()
-    login = (payload.get("requested_reviewer") or {}).get("login") or (
-        payload.get("comment") or {}
-    ).get("user", {}).get("login")
-    if not login:
+    logins = {
+        (payload.get("requested_reviewer") or {}).get("login"),
+        (payload.get("comment") or {}).get("user", {}).get("login"),
+        (payload.get("pull_request") or {}).get("user", {}).get("login"),
+    } - {None}
+    if not logins:
         return {"ok": True, "ignored": True}
-    prof = (
-        sb.table("github_tokens")
-        .select("user_id")
-        .eq("github_login", login)
-        .execute()
-        .data
-    )
-    if not prof:
-        return {"ok": True, "ignored": True}
-    toks = (
-        sb.table("push_tokens")
-        .select("fcm_token")
-        .eq("user_id", prof[0]["user_id"])
-        .execute()
-        .data
-    )
     sent = 0
-    for t in toks:  # FCM fans out to Android directly and to iOS via APNs
-        fcm().send(
-            messaging.Message(
-                token=t["fcm_token"],
-                notification=messaging.Notification(
-                    title="OK2Merge", body="A PR needs your review"
-                ),
-                data={"route": "/"},
-            )
+    for login in logins:
+        prof = (
+            sb.table("github_tokens")
+            .select("user_id")
+            .eq("github_login", login)
+            .execute()
+            .data
         )
-        sent += 1
+        if not prof:
+            continue
+        toks = (
+            sb.table("push_tokens")
+            .select("fcm_token")
+            .eq("user_id", prof[0]["user_id"])
+            .execute()
+            .data
+        )
+        for t in toks:  # FCM fans out to Android directly and to iOS via APNs
+            fcm().send(
+                messaging.Message(
+                    token=t["fcm_token"],
+                    notification=messaging.Notification(
+                        title="OK2Merge", body="A PR needs your review"
+                    ),
+                    data={"route": "/"},
+                )
+            )
+            sent += 1
     return {"ok": True, "pushed": sent}
 
 

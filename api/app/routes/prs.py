@@ -1,9 +1,16 @@
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 
 from ..ai import summarize
 from ..deps import get_current_user
-from ..github import search_review_requested
+from ..github import (
+    get_pr_files,
+    merge_pr,
+    search_authored,
+    search_review_requested,
+    search_reviewed,
+)
 from ..store import read_github_token, sb
 
 router = APIRouter()
@@ -12,13 +19,53 @@ DIFF_LIMIT = 12000
 BETA_DAILY_CAP = 50
 
 
-@router.get("/api/prs")
-def inbox(user_id: str = Depends(get_current_user)):
+def _authed_search(user_id: str, fn):
     found = read_github_token(user_id)
     if not found:
         raise HTTPException(409, "github not connected")
     token, login = found
-    return {"prs": search_review_requested(token, login)}
+    return {"prs": fn(token, login)}
+
+
+@router.get("/api/prs")
+def inbox(user_id: str = Depends(get_current_user)):
+    return _authed_search(user_id, search_review_requested)
+
+
+@router.get("/api/prs/authored")
+def authored(user_id: str = Depends(get_current_user)):
+    return _authed_search(user_id, search_authored)
+
+
+@router.get("/api/prs/activity")
+def activity(user_id: str = Depends(get_current_user)):
+    return _authed_search(user_id, search_reviewed)
+
+
+@router.get("/api/prs/{owner}/{repo}/{n}/files")
+def files(owner: str, repo: str, n: int, user_id: str = Depends(get_current_user)):
+    found = read_github_token(user_id)
+    if not found:
+        raise HTTPException(409, "github not connected")
+    token, _ = found
+    return {"files": get_pr_files(token, f"{owner}/{repo}", n)}
+
+
+class MergeBody(BaseModel):
+    repo: str
+    number: int
+
+
+@router.post("/api/prs/merge")
+def merge(b: MergeBody, user_id: str = Depends(get_current_user)):
+    found = read_github_token(user_id)
+    if not found:
+        raise HTTPException(409, "github not connected")
+    token, _ = found
+    try:
+        return merge_pr(token, b.repo, b.number)
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(502, f"github rejected merge: {e.response.status_code}")
 
 
 @router.get("/api/prs/{owner}/{repo}/{n}/summary")
