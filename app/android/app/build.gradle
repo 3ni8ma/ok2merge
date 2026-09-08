@@ -16,10 +16,27 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    def betaProps = new Properties()
+    def betaPropsFile = new File(System.getProperty("user.home") + "/.gradle/gradle.properties")
+    if (betaPropsFile.exists()) betaPropsFile.withInputStream { betaProps.load(it) }
+    def hasBetaKey = betaProps.getProperty("OK2MERGE_STORE_FILE") != null
+    signingConfigs {
+        beta {
+            if (hasBetaKey) {
+                storeFile = file(betaProps.getProperty("OK2MERGE_STORE_FILE").replace("~", System.getProperty("user.home")))
+                storePassword = betaProps.getProperty("OK2MERGE_STORE_PASSWORD")
+                keyAlias = betaProps.getProperty("OK2MERGE_KEY_ALIAS")
+                keyPassword = betaProps.getProperty("OK2MERGE_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Beta sideload signing (passwords ONLY in ~/.gradle/gradle.properties,
+            // keystore file gitignored). Falls back to debug key without them.
+            signingConfig = hasBetaKey ? signingConfigs.beta : signingConfigs.debug
         }
     }
 }
