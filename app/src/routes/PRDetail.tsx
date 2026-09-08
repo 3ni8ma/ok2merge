@@ -30,10 +30,18 @@ export default function PRDetail() {
   useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (state.kind === "loading")
-    return <div style={{ color: C.paper }}>Summarizing…</div>;
+    return (
+      <div
+        style={{ background: C.ink, color: C.paper, minHeight: "100dvh", padding: 24 }}
+      >
+        Summarizing…
+      </div>
+    );
   if (state.kind === "capped")
     return (
-      <div style={{ color: C.paper }}>
+      <div
+        style={{ background: C.ink, color: C.paper, minHeight: "100dvh", padding: 24 }}
+      >
         Daily cap reached — <Link to="/paywall">Pro removes it</Link>.
       </div>
     );

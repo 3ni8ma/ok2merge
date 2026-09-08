@@ -39,9 +39,23 @@ export default function Inbox() {
     setPending({ pr, event });
   }
 
-  if (unlinked) return <div>GitHub not connected — finish onboarding.</div>;
+  if (unlinked)
+    return (
+      <div
+        style={{ background: C.ink, color: C.paper, minHeight: "100dvh", padding: 24 }}
+      >
+        <p>GitHub not connected.</p>
+        <a href="/onboarding">Finish onboarding</a>
+      </div>
+    );
   if (prs === null)
-    return <div style={{ color: C.paper }}>Loading review inbox…</div>;
+    return (
+      <div
+        style={{ background: C.ink, color: C.paper, minHeight: "100dvh", padding: 24 }}
+      >
+        Loading review inbox…
+      </div>
+    );
   return (
     <div style={{ background: C.ink, minHeight: "100dvh", padding: 16 }}>
       {offline && (
