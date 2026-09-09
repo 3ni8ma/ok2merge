@@ -117,8 +117,18 @@ export default function Inbox() {
       .then((d) => {
         if (!d) return;
         setLists((prev) => ({ ...prev, [which]: d.prs }));
-        if (which === "review")
-          writeSnapshot({ count: d.prs.length, oldestAgeMin: 0, ciFails: 0 });
+        if (which === "review") {
+          const oldest = oldestWaiting(d.prs);
+          const oldestAgeMin = oldest?.created_at
+            ? Math.max(
+                0,
+                Math.floor(
+                  (Date.now() - new Date(oldest.created_at).getTime()) / 60000
+                )
+              )
+            : 0;
+          writeSnapshot({ count: d.prs.length, oldestAgeMin, ciFails: 0 });
+        }
       })
       .catch((e: Error) => {
         if (e.message.includes("409")) setUnlinked(true);
@@ -483,9 +493,13 @@ export default function Inbox() {
                   : EMPTY_COPY[tab]}
               </p>
             </div>
-          ) : tab === "review" && !selecting ? (
-            <Deck prs={visible} onSwipe={offline ? () => {} : onSwipe} />
-          ) : (
+      ) : tab === "review" && !selecting ? (
+        <Deck
+          key={`${tab}:${query}:${sort}`}
+          prs={visible}
+          onSwipe={offline ? () => {} : onSwipe}
+        />
+      ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {visible.map((pr) => {
                 const ref = `${pr.repo}#${pr.number}`;
@@ -528,6 +542,15 @@ export default function Inbox() {
           pr={pending.pr}
           event={pending.event}
           onDone={() => {
+            // Optimistic removal: GitHub search lags, so drop it locally now
+            // (prevents reviewing the same PR twice) and refresh behind it.
+            const ref = `${pending.pr.repo}#${pending.pr.number}`;
+            setLists((prev) => ({
+              ...prev,
+              review: (prev.review ?? []).filter(
+                (p) => `${p.repo}#${p.number}` !== ref
+              ),
+            }));
             setPending(null);
             load("review");
           }}

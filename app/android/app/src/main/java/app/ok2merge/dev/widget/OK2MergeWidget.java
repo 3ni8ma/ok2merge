@@ -22,14 +22,18 @@ public class OK2MergeWidget extends AppWidgetProvider {
       j = new JSONObject();
     }
     long updatedAt = j.optLong("updatedAt");
-    int mins = updatedAt == 0
-      ? -1
-      : (int) ((System.currentTimeMillis() - updatedAt) / 60000);
-    String sub = updatedAt == 0
-      ? "no data yet"
-      : "oldest " + j.optInt("oldestAgeMin") + "m · updated " + mins + "m ago";
+    int count = j.optInt("count");
+    String sub;
+    if (count == 0) {
+      sub = "Inbox zero";
+    } else if (updatedAt == 0) {
+      sub = "no data yet";
+    } else {
+      int mins = (int) ((System.currentTimeMillis() - updatedAt) / 60000);
+      sub = "oldest " + j.optInt("oldestAgeMin") + "m · updated " + mins + "m ago";
+    }
     RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_layout);
-    v.setTextViewText(R.id.count, j.optInt("count") + " to review");
+    v.setTextViewText(R.id.count, count + " to review");
     v.setTextViewText(R.id.sub, sub);
     PendingIntent tap = PendingIntent.getActivity(
       c,

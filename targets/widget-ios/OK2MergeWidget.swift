@@ -55,8 +55,12 @@ struct WidgetView: View {
     VStack(alignment: .leading) {
       Text("\(e.snap.count) to review")
         .font(.headline).foregroundColor(.white)
-      Text("oldest \(e.snap.oldestAgeMin)m · CI fails \(e.snap.ciFails)")
+      Text("oldest \(e.snap.oldestAgeMin)m")
         .font(.caption).foregroundColor(.gray)
+      if e.snap.ciFails > 0 {
+        Text("CI failing: \(e.snap.ciFails)")
+          .font(.caption).foregroundColor(.red)
+      }
       Spacer()
       Text("updated \(age)").font(.caption2).foregroundColor(.gray)
     }.padding()

@@ -41,13 +41,27 @@ async def github_hook(
     ):
         return {"ok": True, "ignored": True}
     payload = await request.json()
+    action = payload.get("action", "")
+    pr = payload.get("pull_request") or {}
     logins = {
         (payload.get("requested_reviewer") or {}).get("login"),
         (payload.get("comment") or {}).get("user", {}).get("login"),
-        (payload.get("pull_request") or {}).get("user", {}).get("login"),
-    } - {None}
+        (pr.get("user") or {}).get("login"),
+    } | {
+        r.get("login")
+        for r in payload.get("requested_reviewers") or []
+        if r.get("login")
+    }
+    logins -= {None}
     if not logins:
         return {"ok": True, "ignored": True}
+    if action == "synchronize":
+        base = pr.get("base") or {}
+        repo_name = (base.get("repo") or {}).get("full_name", "a PR")
+        ref = f"#{pr['number']}" if pr.get("number") else ""
+        body = f"New commits on {repo_name}{ref}"
+    else:
+        body = "A PR needs your review"
     sent = 0
     for login in logins:
         prof = (
@@ -70,9 +84,9 @@ async def github_hook(
             fcm().send(
                 messaging.Message(
                     token=t["fcm_token"],
-                    notification=messaging.Notification(
-                        title="OK2Merge", body="A PR needs your review"
-                    ),
+                notification=messaging.Notification(
+                    title="OK2Merge", body=body
+                ),
                     data={"route": "/"},
                 )
             )

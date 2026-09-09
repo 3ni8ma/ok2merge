@@ -157,3 +157,78 @@ def test_webhook_fans_out_to_author(client, respx_mock, monkeypatch):
     )
     assert r.json() == {"ok": True, "pushed": 1}
     assert sent == ["tok123"]
+
+
+def test_webhook_synchronize_notifies_reviewers(client, respx_mock, monkeypatch):
+    import app.routes.webhooks as wh_mod
+    from unittest.mock import MagicMock
+
+    mock_send = MagicMock()
+
+    class FakeTable:
+        def __init__(self, rows=None):
+            self._rows = list(rows or [])
+
+        def select(self, *a):
+            return self
+
+        def eq(self, k, v):
+            self._rows = [r for r in self._rows if r.get(k) == v]
+            return self
+
+        def execute(self):
+            return self
+
+        @property
+        def data(self):
+            return self._rows
+
+    tables = {
+        "github_tokens": [
+            {"user_id": "u-rev", "github_login": "amy"},
+            {"user_id": "u-author", "github_login": "octo"},
+        ],
+        "push_tokens": [
+            {"user_id": "u-rev", "fcm_token": "tok-rev"},
+            {"user_id": "u-author", "fcm_token": "tok-author"},
+        ],
+    }
+
+    monkeypatch.setattr(
+        wh_mod,
+        "sb",
+        type("S", (), {"table": staticmethod(lambda n: FakeTable(tables[n]))})(),
+    )
+    monkeypatch.setattr(
+        wh_mod, "fcm", lambda: type("F", (), {"send": staticmethod(mock_send)})()
+    )
+    import hmac, os
+
+    body = json.dumps(
+        {
+            "action": "synchronize",
+            "pull_request": {
+                "number": 7,
+                "user": {"login": "octo"},
+                "base": {"repo": {"full_name": "o/r"}},
+            },
+            "requested_reviewers": [{"login": "amy"}],
+        }
+    ).encode()
+    sig = "sha256=" + hmac.new(
+        os.environ.get("GITHUB_WEBHOOK_SECRET", "").encode(), body, "sha256"
+    ).hexdigest()
+    r = client.post(
+        "/webhooks/github",
+        content=body,
+        headers={
+            "X-GitHub-Event": "pull_request",
+            "X-Hub-Signature-256": sig,
+            "Content-Type": "application/json",
+        },
+    )
+    assert r.json() == {"ok": True, "pushed": 2}
+    sent = sorted(c.args[0].token for c in mock_send.call_args_list)
+    assert sent == ["tok-author", "tok-rev"]
+    bodies = [c.args[0].notification.body for c in mock_send.call_args_list]
+    assert all("New commits on o/r#7" in b for b in bodies)
