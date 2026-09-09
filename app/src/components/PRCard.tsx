@@ -91,7 +91,7 @@ export function PRCard({
         >
           {state}
         </span>
-        {typeof pr.comments === "number" && (
+        {typeof pr.comments === "number" && pr.comments > 0 && (
           <span style={{ color: C.muted }}>
             <MessageIcon size={14} /> {pr.comments}
           </span>
@@ -108,7 +108,7 @@ export function PRCard({
           </span>
         )}
       </div>
-      {(labels.length > 0 || onLabelsChange) && (
+      {(labels.length > 0 || (onLabelsChange && state !== "merged" && state !== "closed")) && (
         <div
           style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}
         >
