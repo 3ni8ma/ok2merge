@@ -64,3 +64,30 @@ textarea {
   display: inline-block;
   animation: logo-pulse 1.6s ease-in-out infinite;
 }
+
+:root {
+  --ok-merge: #22c55e;
+  --ok-ink: #0d1117;
+  --ok-surface: #161b22;
+  --ok-border: #2a3340;
+  --ok-paper: #f6f8fa;
+  --ok-amber: #f59e0b;
+  --ok-red: #ef4444;
+  --ok-muted: #8b949e;
+}
+:focus-visible {
+  outline: 2px solid var(--ok-merge);
+  outline-offset: 2px;
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
