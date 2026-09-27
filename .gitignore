@@ -14,3 +14,5 @@ android/app/build/
 android/.gradle/
 android/local.properties
 plugins/widget-bridge/.build/
+.superpowers/
+.worktrees/
