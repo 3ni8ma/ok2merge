@@ -138,6 +138,41 @@ def merge(b: MergeBody, user_id: str = Depends(get_current_user)):
         raise HTTPException(502, f"github rejected merge: {e.response.status_code}")
 
 
+from datetime import date
+
+
+def ensure_quota(user_id: str) -> dict:
+    rows = (
+        sb.table("entitlements").select("*").eq("user_id", user_id).execute().data
+    )
+    today = str(date.today())
+    if not rows:
+        created = (
+            sb.table("entitlements")
+            .upsert(
+                {"user_id": user_id, "tier": "free", "day": today, "summaries_used_today": 0},
+                on_conflict="user_id",
+            )
+            .execute()
+            .data
+        )
+        return created[0]
+    ent = rows[0]
+    if ent.get("day") != today:
+        rolled = (
+            sb.table("entitlements")
+            .update({"day": today, "summaries_used_today": 0})
+            .eq("user_id", user_id)
+            .execute()
+            .data
+        )
+        return rolled[0]
+    cap = 10**9 if ent.get("tier") == "pro" else BETA_DAILY_CAP
+    if (ent.get("summaries_used_today") or 0) >= cap:
+        raise HTTPException(429, "daily summary cap reached")
+    return ent
+
+
 @router.get("/api/prs/{owner}/{repo}/{n}/summary")
 def summary(
     owner: str,
@@ -163,37 +198,37 @@ def summary(
     )
     if hit:
         return {"summary": hit[0]["summary"], "partial": hit[0]["partial"], "cached": True}
-    ent = (
-        sb.table("entitlements")
-        .select("*")
-        .eq("user_id", user_id)
-        .single()
-        .execute()
-        .data
-    )
-    from datetime import date
-
-    if ent["day"] != str(date.today()):
-        ent = (
-            sb.table("entitlements")
-            .update({"day": str(date.today()), "summaries_used_today": 0})
-            .eq("user_id", user_id)
-            .execute()
-            .data[0]
+    ent = ensure_quota(user_id)
+    try:
+        raw_resp = httpx.get(
+            f"https://api.github.com/repos/{full}/pulls/{n}",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github.diff",
+            },
+            timeout=30,
         )
-    cap = 10**9 if ent["tier"] == "pro" else BETA_DAILY_CAP
-    if ent["summaries_used_today"] >= cap:
-        raise HTTPException(429, "daily summary cap reached")
-    raw = httpx.get(
-        f"https://api.github.com/repos/{full}/pulls/{n}",
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github.diff",
-        },
-        timeout=30,
-    ).text
+        if raw_resp.status_code == 401:
+            raise HTTPException(409, "github not connected")
+        if raw_resp.status_code == 404:
+            raise HTTPException(404, "PR not found")
+        raw_resp.raise_for_status()
+        raw = raw_resp.text
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(504, "diff fetch failed, retry shortly")
     partial = len(raw) > DIFF_LIMIT
-    text = summarize(raw[:DIFF_LIMIT])
+    cut = raw[:DIFF_LIMIT]
+    hunk = cut.rfind("\n@@")
+    if partial and hunk > DIFF_LIMIT - 2000:
+        cut = cut[:hunk]
+    try:
+        text = summarize(cut)
+    except Exception:
+        raise HTTPException(502, "summarizer unavailable, retry shortly")
+    if not text.startswith("WHAT:"):
+        raise HTTPException(502, "summarizer returned bad shape, retry shortly")
     sb.table("summary_cache").upsert(
         {
             "user_id": user_id,
@@ -202,9 +237,10 @@ def summary(
             "head_sha": sha,
             "summary": text,
             "partial": partial,
-        }
+        },
+        on_conflict="user_id,repo,pr_number,head_sha",
     ).execute()
     sb.table("entitlements").update(
-        {"summaries_used_today": ent["summaries_used_today"] + 1}
+        {"summaries_used_today": ent.get("summaries_used_today", 0) + 1}
     ).eq("user_id", user_id).execute()
     return {"summary": text, "partial": partial, "cached": False}

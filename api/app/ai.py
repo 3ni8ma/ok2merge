@@ -11,8 +11,11 @@ PROMPT = (
 
 
 def summarize(diff: str) -> str:
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-    # Model is env-pinned; confirm availability at build time, swap via env.
-    model = os.environ.get("AI_MODEL", "gemini-3.6-flash")
-    resp = client.models.generate_content(model=model, contents=PROMPT + diff)
-    return (resp.text or "").strip()
+    try:
+        client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+        # Model is env-pinned; confirm availability at build time, swap via env.
+        model = os.environ.get("AI_MODEL", "gemini-3.6-flash")
+        resp = client.models.generate_content(model=model, contents=PROMPT + diff)
+        return (resp.text or "").strip()
+    except Exception as e:
+        raise RuntimeError("summarizer failed") from e
