@@ -32,13 +32,21 @@ class FakeTable:
             return self._rows[0] if self._rows else None
         return self._rows
 
-    def upsert(self, row):
+    def upsert(self, row, *args, **kwargs):
         self.upserted.append(row)
         return self
 
     def update(self, row):
         self.updated.append(row)
         return self
+
+
+class FakeSb:
+    def __init__(self, tables):
+        self._tables = tables
+
+    def table(self, name):
+        return self._tables[name]
 
 
 def _tables(cache_rows=None):
@@ -60,10 +68,10 @@ def test_summary_caches_by_sha(client, auth_header, respx_mock, monkeypatch):
     respx_mock.get(
         DIFF_URL, headers__contains={"Accept": "application/vnd.github.diff"}
     ).respond(200, text="diff --git a/f b/f\n+x")
-    monkeypatch.setattr(prs_mod, "summarize", lambda diff: "WHAT//RISK//CHECK")
+    monkeypatch.setattr(prs_mod, "summarize", lambda diff: "WHAT: x\nRISK: y\nCHECK: z")
     monkeypatch.setattr(prs_mod, "read_github_token", lambda uid: ("t", "octo"))
     tables = _tables()
-    monkeypatch.setattr(prs_mod.sb, "table", lambda name: tables[name])
+    monkeypatch.setattr(prs_mod, "sb", FakeSb(tables))
 
     r1 = client.get("/api/prs/o/r/7/summary?sha=deadbee", headers=auth_header)
     assert r1.status_code == 200, r1.text
@@ -74,7 +82,7 @@ def test_summary_caches_by_sha(client, auth_header, respx_mock, monkeypatch):
         [
             {
                 "user_id": "test-user-id",
-                "summary": "WHAT//RISK//CHECK",
+                "summary": "WHAT: x\nRISK: y\nCHECK: z",
                 "partial": False,
                 "repo": "o/r",
                 "pr_number": 7,
@@ -82,10 +90,10 @@ def test_summary_caches_by_sha(client, auth_header, respx_mock, monkeypatch):
             }
         ]
     )
-    monkeypatch.setattr(prs_mod.sb, "table", lambda name: tables2[name])
+    monkeypatch.setattr(prs_mod, "sb", FakeSb(tables2))
     r2 = client.get("/api/prs/o/r/7/summary?sha=deadbee", headers=auth_header)
     assert r2.json() == {
-        "summary": "WHAT//RISK//CHECK",
+        "summary": "WHAT: x\nRISK: y\nCHECK: z",
         "partial": False,
         "cached": True,
     }
