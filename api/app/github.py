@@ -2,6 +2,33 @@ import time
 
 import httpx
 
+
+class GitHubAuthError(RuntimeError):
+    pass
+
+
+class GitHubRateError(RuntimeError):
+    def __init__(self, retry_after: str):
+        super().__init__(f"github rate limited, retry after {retry_after}s")
+        self.retry_after = retry_after
+
+
+class GitHubNotFoundError(RuntimeError):
+    pass
+
+
+def gh_raise(r: httpx.Response, context: str) -> None:
+    if r.status_code < 400:
+        return
+    if r.status_code == 401:
+        raise GitHubAuthError(f"github unauthorized in {context}: reconnect GitHub")
+    if r.status_code == 403 and r.headers.get("X-RateLimit-Remaining") == "0":
+        raise GitHubRateError(r.headers.get("Retry-After", "60"))
+    if r.status_code == 404:
+        raise GitHubNotFoundError(f"github not found in {context}")
+    r.raise_for_status()
+
+
 _cache: dict = {}
 CACHE_TTL = 60
 
@@ -81,12 +108,15 @@ def search_mentions(token: str, login: str) -> list:
     return _search(token, login, "involves")
 
 
-def get_check_runs(token: str, owner_repo: str, sha: str) -> list:
+def get_check_runs(token: str, owner_repo: str, sha: str, per_page: int = 30) -> list:
     """Workflow runs for a commit — directly re-runnable, unlike raw check-runs."""
     with gh(token) as c:
-        runs = c.get(
-            f"/repos/{owner_repo}/actions/runs", params={"head_sha": sha}
-        ).json()["workflow_runs"]
+        r = c.get(
+            f"/repos/{owner_repo}/actions/runs",
+            params={"head_sha": sha, "per_page": per_page},
+        )
+        gh_raise(r, "checks")
+        runs = r.json()["workflow_runs"]
         return [
             {
                 "id": r["id"],
@@ -122,9 +152,11 @@ def set_labels(token: str, owner_repo: str, n: int, labels: list) -> dict:
         return {"ok": True, "labels": [label["name"] for label in r.json()]}
 
 
-def get_pr_files(token: str, owner_repo: str, n: int) -> list:
+def get_pr_files(token: str, owner_repo: str, n: int, page: int = 1, per_page: int = 30) -> list:
     with gh(token) as c:
-        files = c.get(f"/repos/{owner_repo}/pulls/{n}/files").json()
+        r = c.get(f"/repos/{owner_repo}/pulls/{n}/files", params={"page": page, "per_page": per_page})
+        gh_raise(r, "files")
+        files = r.json()
         return [
             {
                 "filename": f["filename"],
