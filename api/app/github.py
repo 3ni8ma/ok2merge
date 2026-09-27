@@ -1,6 +1,8 @@
-import time
+import asyncio
+import hashlib
 
 import httpx
+from cachetools import TTLCache
 
 
 class GitHubAuthError(RuntimeError):
@@ -29,8 +31,12 @@ def gh_raise(r: httpx.Response, context: str) -> None:
     r.raise_for_status()
 
 
-_cache: dict = {}
+_cache: TTLCache = TTLCache(maxsize=512, ttl=60)
 CACHE_TTL = 60
+
+
+def _token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()[:16]
 
 
 def gh(token: str) -> httpx.Client:
@@ -77,17 +83,61 @@ def _enrich(c: httpx.Client, items: list) -> list:
     return out
 
 
+async def enrich_async(token: str, items: list) -> list:
+    import httpx as _hx
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    sem = asyncio.Semaphore(8)
+
+    async def one(it: dict) -> dict:
+        owner_repo = it["repository_url"].split("repos/")[1]
+        num = it["number"]
+        async with sem:
+            async with _hx.AsyncClient(
+                base_url="https://api.github.com", headers=headers, timeout=20
+            ) as ac:
+                r = await ac.get(f"/repos/{owner_repo}/pulls/{num}")
+                gh_raise(r, "enrich")
+                pr = r.json()
+        return {
+            "repo": owner_repo,
+            "number": num,
+            "title": it["title"],
+            "author": it["user"]["login"],
+            "author_avatar": pr["user"].get("avatar_url"),
+            "head_sha": pr["head"]["sha"],
+            "state": "merged"
+            if pr.get("merged_at")
+            else ("closed" if pr.get("state") == "closed" else "open"),
+            "draft": bool(pr.get("draft")),
+            "merged_at": pr.get("merged_at"),
+            "created_at": pr.get("created_at"),
+            "comments": pr.get("comments", 0) + pr.get("review_comments", 0),
+            "additions": pr.get("additions", 0),
+            "deletions": pr.get("deletions", 0),
+            "changed_files": pr.get("changed_files", 0),
+            "mergeable_state": pr.get("mergeable_state"),
+            "labels": [label["name"] for label in pr.get("labels", [])],
+        }
+
+    return list(await asyncio.gather(*[one(it) for it in items]))
+
+
 def _search(token: str, login: str, qualifier: str, extra: str = "") -> list:
-    key = (qualifier, login)
-    if key in _cache and time.time() - _cache[key][0] < CACHE_TTL:
-        return _cache[key][1]
+    key = (_token_hash(token), qualifier, login)
+    if key in _cache:
+        return _cache[key]
     with gh(token) as c:
         items = c.get(
             "/search/issues",
             params={"q": f"is:pr {qualifier}:@me {extra}".strip(), "per_page": 30},
         ).json()["items"]
-        out = _enrich(c, items)
-        _cache[key] = (time.time(), out)
+        out = asyncio.run(enrich_async(token, items))
+        _cache[key] = out
         return out
 
 

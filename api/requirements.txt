@@ -6,3 +6,4 @@ google-genai==2.22.*
 firebase-admin==6.5.*
 pytest==8.3.*
 respx==0.22.*
+cachetools==5.5.0
