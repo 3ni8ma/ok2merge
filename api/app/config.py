@@ -3,7 +3,8 @@ import os
 
 def env(name: str) -> str:
     v = os.environ.get(name, "")
-    assert v, f"missing env {name}"
+    if not v:
+        raise RuntimeError(f"missing env {name} — copy api/.env.example to api/.env")
     return v
 
 
