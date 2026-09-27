@@ -119,6 +119,10 @@ def test_webhook_fans_out_to_author(client, respx_mock, monkeypatch):
             self._rows = [r for r in self._rows if r.get(k) == v]
             return self
 
+        def in_(self, k, vals):
+            self._rows = [r for r in self._rows if r.get(k) in vals]
+            return self
+
         def execute(self):
             return self
 
@@ -174,6 +178,10 @@ def test_webhook_synchronize_notifies_reviewers(client, respx_mock, monkeypatch)
 
         def eq(self, k, v):
             self._rows = [r for r in self._rows if r.get(k) == v]
+            return self
+
+        def in_(self, k, vals):
+            self._rows = [r for r in self._rows if r.get(k) in vals]
             return self
 
         def execute(self):

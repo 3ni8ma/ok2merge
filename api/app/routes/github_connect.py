@@ -22,6 +22,8 @@ def connect(body: ConnectBody, user_id: str = Depends(get_current_user)):
     )
     if me.status_code != 200:
         raise HTTPException(502, "github token rejected by github")
+    if me.json().get("login", "").lower() != body.login.lower():
+        raise HTTPException(400, "login mismatch")
     store_github_token(user_id, body.token, body.login)
     sb.table("profiles").upsert({"user_id": user_id}).execute()
     sb.table("entitlements").upsert({"user_id": user_id}).execute()
