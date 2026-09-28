@@ -51,3 +51,18 @@ export function oldestWaiting(prs: PR[]): PR | null {
     (a, b) => +new Date(a.created_at!) - +new Date(b.created_at!)
   )[0];
 }
+
+export function mergeBadge(pr: { mergeable_state?: string | null; draft?: boolean }): string {
+  if (pr.draft) return "draft";
+  if (pr.mergeable_state === "clean") return "ready";
+  if (pr.mergeable_state === "dirty" || pr.mergeable_state === "blocked") return "blocked";
+  return "unknown";
+}
+
+export function sizeChip(total: number): string {
+  if (total < 50) return "XS";
+  if (total < 200) return "S";
+  if (total < 600) return "M";
+  if (total < 2000) return "L";
+  return "XL";
+}

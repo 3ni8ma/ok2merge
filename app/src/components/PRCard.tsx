@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { PR } from "./InboxDeck";
-import { ageParts, stateLabel } from "../lib/prDisplay";
+import { ageParts, mergeBadge, sizeChip, stateLabel } from "../lib/prDisplay";
 import { C } from "../theme";
 import { ClockIcon, MessageIcon } from "./icons";
 
@@ -16,12 +16,17 @@ const STATE_COLORS: Record<string, string> = {
 export function PRCard({
   pr,
   onLabelsChange,
+  runs,
 }: {
   pr: PR;
   onLabelsChange?: (labels: string[]) => void;
+  runs?: Array<{ id?: string | number; name: string; conclusion?: string | null }>;
 }) {
   const age = ageParts(pr.created_at);
   const state = stateLabel(pr);
+  const badge = mergeBadge(pr);
+  const size = sizeChip((pr.additions ?? 0) + (pr.deletions ?? 0));
+  const failedRuns = (runs ?? []).filter((r) => r.conclusion === "failure").slice(0, 3);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
   const labels = pr.labels ?? [];
@@ -92,6 +97,11 @@ export function PRCard({
         >
           {state}
         </span>
+        <span aria-label={`Merge status ${badge}`}>{badge === "ready" ? "✓ Ready" : badge === "blocked" ? "✕ Blocked" : badge === "draft" ? "Draft" : "Unknown"}</span>
+        <span aria-label={`Size ${size}`}>{size}</span>
+        {failedRuns.map((r) => (
+          <span key={r.id ?? r.name}>✕ {r.name}</span>
+        ))}
         {typeof pr.comments === "number" && pr.comments > 0 && (
           <span style={{ color: C.muted }}>
             <MessageIcon size={14} /> {pr.comments}
