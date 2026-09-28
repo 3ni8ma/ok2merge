@@ -241,7 +241,7 @@ export default function PRDetail() {
     }
   }
 
-  useEffect(() => load(), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => load(), [rest, sha]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (parts.length < 3 || Number.isNaN(Number(parts[2])))
     return (

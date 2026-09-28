@@ -217,6 +217,12 @@ def summary(
         )
         if raw_resp.status_code == 401:
             raise HTTPException(409, "github not connected")
+        if raw_resp.status_code == 403:
+            retry_after = raw_resp.headers.get("Retry-After")
+            headers = {"Retry-After": retry_after} if retry_after else None
+            raise HTTPException(
+                429, "github rate limited, retry shortly", headers=headers
+            )
         if raw_resp.status_code == 404:
             raise HTTPException(404, "PR not found")
         raw_resp.raise_for_status()

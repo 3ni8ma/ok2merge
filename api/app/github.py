@@ -124,7 +124,14 @@ async def enrich_async(token: str, items: list) -> list:
             "labels": [label["name"] for label in pr.get("labels", [])],
         }
 
-    return list(await asyncio.gather(*[one(it) for it in items]))
+    async def safe_one(it: dict) -> dict | None:
+        try:
+            return await one(it)
+        except GitHubNotFoundError:
+            return None
+
+    results = await asyncio.gather(*[safe_one(it) for it in items])
+    return [r for r in results if r is not None]
 
 
 def _search(token: str, login: str, qualifier: str, extra: str = "") -> list:
@@ -132,10 +139,12 @@ def _search(token: str, login: str, qualifier: str, extra: str = "") -> list:
     if key in _cache:
         return _cache[key]
     with gh(token) as c:
-        items = c.get(
+        r = c.get(
             "/search/issues",
             params={"q": f"is:pr {qualifier}:@me {extra}".strip(), "per_page": 30},
-        ).json()["items"]
+        )
+        gh_raise(r, "search")
+        items = r.json()["items"]
         out = asyncio.run(enrich_async(token, items))
         _cache[key] = out
         return out

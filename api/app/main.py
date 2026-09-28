@@ -1,13 +1,34 @@
 import logging
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
+from .github import GitHubAuthError, GitHubNotFoundError, GitHubRateError
 from .routes import account, github_connect, prs, push, reviews, webhooks
 
 logging.basicConfig(level=logging.INFO)
 app = FastAPI()
+
+
+@app.exception_handler(GitHubAuthError)
+async def github_auth_handler(request: Request, exc: GitHubAuthError):
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(GitHubRateError)
+async def github_rate_handler(request: Request, exc: GitHubRateError):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": str(exc)},
+        headers={"Retry-After": str(exc.retry_after)},
+    )
+
+
+@app.exception_handler(GitHubNotFoundError)
+async def github_notfound_handler(request: Request, exc: GitHubNotFoundError):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 # Browsers block cross-origin calls without this. The PWA calls the API from
 # a different domain, so its origin must be explicitly allowed.
