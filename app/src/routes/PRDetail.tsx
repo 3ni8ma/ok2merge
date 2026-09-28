@@ -44,8 +44,10 @@ export default function PRDetail() {
   const [mergeState, setMergeState] = useState<
     "idle" | "working" | "merged" | "already" | "failed"
   >("idle");
+  const [showAll, setShowAll] = useState(false);
 
-  const [owner, repo, n] = (rest ?? "").split("/");
+  const parts = (rest ?? "").split("/").filter(Boolean);
+  const [owner, repo, n] = parts;
   const fullRepo = `${owner}/${repo}`;
   const nav = useNavigate();
 
@@ -60,23 +62,44 @@ export default function PRDetail() {
   }
 
   function load() {
+    // api.* has no signal param (signatures unchanged), so the controller
+    // guards setState after unmount instead of cancelling the fetch itself.
+    const ctrl = new AbortController();
     setState({ kind: "loading" });
-    const [owner, repo, n] = (rest ?? "").split("/");
+    const parts = (rest ?? "").split("/").filter(Boolean);
+    if (parts.length < 3 || Number.isNaN(Number(parts[2])))
+      return () => ctrl.abort();
+    const [owner, repo, n] = parts;
     api
       .summary(`${owner}/${repo}`, Number(n), sha)
-      .then((d) => setState({ kind: "ok", summary: d.summary, partial: d.partial }))
+      .then((d) => {
+        if (!ctrl.signal.aborted)
+          setState({ kind: "ok", summary: d.summary, partial: d.partial });
+      })
       .catch((e: Error) => {
+        if (ctrl.signal.aborted || e?.name === "AbortError") return;
         if (e.message.includes("429")) setState({ kind: "capped" });
         else setState({ kind: "error", retry: load });
       });
     api
       .files(`${owner}/${repo}`, Number(n))
-      .then((d) => setFiles(d.files))
-      .catch(() => setFiles([]));
+      .then((d) => {
+        if (!ctrl.signal.aborted) setFiles(d.files);
+      })
+      .catch((e: Error) => {
+        if (ctrl.signal.aborted || e?.name === "AbortError") return;
+        setFiles([]);
+      });
     api
       .checks(`${owner}/${repo}`, Number(n), sha)
-      .then((d) => setChecks(d.runs))
-      .catch(() => setChecks([]));
+      .then((d) => {
+        if (!ctrl.signal.aborted) setChecks(d.runs);
+      })
+      .catch((e: Error) => {
+        if (ctrl.signal.aborted || e?.name === "AbortError") return;
+        setChecks([]);
+      });
+    return () => ctrl.abort();
   }
 
   async function doRerun(runId: number) {
@@ -129,8 +152,16 @@ export default function PRDetail() {
     }
   }
 
-  useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => load(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  if (parts.length < 3 || Number.isNaN(Number(parts[2])))
+    return (
+      <div
+        style={{ background: C.ink, color: C.paper, minHeight: "100dvh", padding: 24 }}
+      >
+        PR not found — check the link.
+      </div>
+    );
   if (state.kind === "loading")
     return (
       <div
@@ -217,7 +248,7 @@ export default function PRDetail() {
       </h3>
       {files !== null && files.length > 0 && (
         <ul style={{ paddingLeft: 18, color: C.muted, fontSize: 13 }}>
-          {files.slice(0, 20).map((f) => (
+          {(showAll ? files : files.slice(0, 20)).map((f) => (
             <li key={f.filename}>
               {f.filename}{" "}
               <span style={{ color: C.merge }}>+{f.additions}</span>{" "}
@@ -225,6 +256,14 @@ export default function PRDetail() {
             </li>
           ))}
         </ul>
+      )}
+      {files !== null && files.length > 20 && (
+        <button
+          onClick={() => setShowAll((s) => !s)}
+          style={{ fontSize: 12, padding: "6px 12px" }}
+        >
+          {showAll ? "Show less" : `Show all (${files.length})`}
+        </button>
       )}
       <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input
@@ -243,9 +282,9 @@ export default function PRDetail() {
         </button>
       </div>
       {notice && (
-        <p style={{ color: C.muted, fontSize: 13 }}>{notice}</p>
+        <p aria-live="polite" style={{ color: C.muted, fontSize: 13 }}>{notice}</p>
       )}
-      <div style={{ marginTop: 16 }}>
+      <div aria-live="polite" style={{ marginTop: 16 }}>
         {mergeState === "idle" && (
           <button onClick={doMerge}>Merge when green</button>
         )}
