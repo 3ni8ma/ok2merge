@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type JSX } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState, type JSX } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api } from "../lib/api";
@@ -75,6 +75,7 @@ export default function Inbox() {
   const [unlinked, setUnlinked] = useState(false);
   const [failed, setFailed] = useState("");
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [sort, setSort] = useState<SortKey>("newest");
   const [pending, setPending] = useState<{ pr: PR; event: ReviewEvent } | null>(
     null
@@ -114,9 +115,16 @@ export default function Inbox() {
                 : api.activity();
         return call;
       })
-      .then((d) => {
+      .then(async (d) => {
         if (!d) return;
         setLists((prev) => ({ ...prev, [which]: d.prs }));
+        if ("setAppBadge" in navigator) {
+          try {
+            await (navigator as unknown as { setAppBadge: (n: number) => Promise<void> }).setAppBadge(d.prs.length);
+          } catch {
+            // badge unsupported or denied — inbox count already visible in tabs
+          }
+        }
         if (which === "review") {
           const oldest = oldestWaiting(d.prs);
           const oldestAgeMin = oldest?.created_at
@@ -208,8 +216,8 @@ export default function Inbox() {
 
   const raw = tab === "insights" ? null : lists[tab as keyof Lists];
   const visible = useMemo(
-    () => (raw ? sortPrs(filterPrs(applySnooze(raw), query), sort) : null),
-    [raw, query, sort]
+    () => (raw ? sortPrs(filterPrs(applySnooze(raw), deferredQuery), sort) : null),
+    [raw, deferredQuery, sort]
   );
   const oldest = useMemo(
     () => (tab === "review" && raw ? oldestWaiting(raw) : null),
@@ -337,25 +345,37 @@ export default function Inbox() {
             {filters
               .filter((f) => f.tab === tab)
               .map((f) => (
-                <button
+                <span
                   key={f.name}
-                  onClick={() => {
-                    setQuery(f.query);
-                    setSort(f.sort as SortKey);
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setFilters(deleteFilter(f.name));
-                  }}
-                  title="Apply filter (right-click to delete)"
-                  style={{
-                    background: "#161B22",
-                    color: C.paper,
-                    fontSize: 13,
-                  }}
+                  style={{ display: "inline-flex", gap: 4, alignItems: "center" }}
                 >
-                  {f.name}
-                </button>
+                  <button
+                    onClick={() => {
+                      setQuery(f.query);
+                      setSort(f.sort as SortKey);
+                    }}
+                    style={{
+                      background: "#161B22",
+                      color: C.paper,
+                      fontSize: 13,
+                    }}
+                  >
+                    {f.name}
+                  </button>
+                  <button
+                    onClick={() => setFilters(deleteFilter(f.name))}
+                    aria-label="Remove filter"
+                    title={`Remove filter ${f.name}`}
+                    style={{
+                      background: "transparent",
+                      color: C.muted,
+                      minHeight: 44,
+                      minWidth: 44,
+                    }}
+                  >
+                    ×
+                  </button>
+                </span>
               ))}
             {savingFilter ? (
               <span style={{ display: "flex", gap: 4 }}>
@@ -412,16 +432,31 @@ export default function Inbox() {
           )}
 
           {offline && (
-            <div style={{ color: C.amber, marginBottom: 12 }}>
+            <div role="alert" style={{ color: C.amber, marginBottom: 12 }}>
               Offline — cached view, swipes disabled.
             </div>
           )}
 
           {tab === "review" && (visible?.length ?? 0) > 1 && (
-            <div style={{ marginBottom: 12 }}>
+            <div
+              style={{
+                position: "sticky",
+                bottom: "calc(env(safe-area-inset-bottom) + 8px)",
+                marginBottom: 12,
+                background: "#161B22",
+                border: "1px solid #2A3340",
+                borderRadius: 12,
+                padding: 8,
+                zIndex: 1,
+              }}
+            >
               {selecting ? (
                 <span style={{ display: "flex", gap: 8 }}>
-                  <button onClick={approveSelected} disabled={selected.size === 0}>
+                  <button
+                    onClick={approveSelected}
+                    disabled={selected.size === 0}
+                    style={{ minHeight: 44, minWidth: 44 }}
+                  >
                     Approve {selected.size} selected
                     {bulkState === "working" ? "…" : ""}
                   </button>
@@ -430,7 +465,12 @@ export default function Inbox() {
                       setSelecting(false);
                       setSelected(new Set());
                     }}
-                    style={{ background: "transparent", color: C.muted }}
+                    style={{
+                      background: "transparent",
+                      color: C.muted,
+                      minHeight: 44,
+                      minWidth: 44,
+                    }}
                   >
                     Cancel
                   </button>
@@ -438,7 +478,13 @@ export default function Inbox() {
               ) : (
                 <button
                   onClick={() => setSelecting(true)}
-                  style={{ background: "transparent", color: C.muted, fontSize: 13 }}
+                  style={{
+                    background: "transparent",
+                    color: C.muted,
+                    fontSize: 13,
+                    minHeight: 44,
+                    minWidth: 44,
+                  }}
                 >
                   Select multiple…
                 </button>
@@ -459,8 +505,8 @@ export default function Inbox() {
             >
               {failed ? (
                 <>
-                  <p>Couldn't reach the review server.</p>
-                  <p style={{ color: C.muted, fontSize: 13 }}>{failed}</p>
+                  <p role="alert">Couldn't reach the review server.</p>
+                  <p role="alert" style={{ color: C.muted, fontSize: 13 }}>{failed}</p>
                   <button onClick={() => load(tab as "review" | "authored" | "done" | "mentions")}>
                     Retry
                   </button>
@@ -470,7 +516,7 @@ export default function Inbox() {
                   <span className="logo-pulse">
                     <Logo size={72} />
                   </span>
-                  <span>Loading…</span>
+                  <span role="status">Loading…</span>
                 </>
               )}
             </div>
@@ -495,7 +541,7 @@ export default function Inbox() {
             </div>
       ) : tab === "review" && !selecting ? (
         <Deck
-          key={`${tab}:${query}:${sort}`}
+          key={`${tab}:${sort}`}
           prs={visible}
           onSwipe={offline ? () => {} : onSwipe}
           locked={pending !== null}

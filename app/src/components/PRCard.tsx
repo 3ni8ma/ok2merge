@@ -49,6 +49,7 @@ export function PRCard({
             alt={pr.author}
             width={22}
             height={22}
+            loading="lazy"
             style={{ borderRadius: "50%" }}
           />
         ) : null}
