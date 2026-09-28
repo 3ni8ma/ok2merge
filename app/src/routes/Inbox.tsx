@@ -498,6 +498,7 @@ export default function Inbox() {
           key={`${tab}:${query}:${sort}`}
           prs={visible}
           onSwipe={offline ? () => {} : onSwipe}
+          locked={pending !== null}
         />
       ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -541,6 +542,7 @@ export default function Inbox() {
         <ReviewSheet
           pr={pending.pr}
           event={pending.event}
+          onCancel={() => setPending(null)}
           onDone={() => {
             // Optimistic removal: GitHub search lags, so drop it locally now
             // (prevents reviewing the same PR twice) and refresh behind it.

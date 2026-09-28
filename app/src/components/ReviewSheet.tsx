@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { api } from "../lib/api";
 import { newReviewKey } from "../lib/idempotency";
@@ -15,15 +15,25 @@ export function ReviewSheet({
   pr,
   event,
   onDone,
+  onCancel,
 }: {
   pr: PR;
   event: ReviewEvent;
   onDone: () => void;
+  onCancel: () => void;
 }) {
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const ref = `${pr.repo}#${pr.number}`;
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onCancel();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
 
   async function submit() {
     setBusy(true);
@@ -51,7 +61,12 @@ export function ReviewSheet({
   }
 
   return (
-    <div style={{ background: "#161B22", borderRadius: "16px 16px 0 0", padding: 16 }}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Confirm review"
+      style={{ background: "#161B22", borderRadius: "16px 16px 0 0", padding: 16 }}
+    >
       <p style={{ color: C.paper }}>{confirmText(event, ref)}</p>
       <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
         {(event === "APPROVE"
@@ -67,16 +82,27 @@ export function ReviewSheet({
           </button>
         ))}
       </div>
+      <label htmlFor="review-body" style={{ color: C.paper }}>
+        Comment
+      </label>
       <textarea
+        id="review-body"
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="Comment (optional — use the OS dictation key to dictate)"
         rows={3}
         style={{ width: "100%" }}
       />
-      {error && <p style={{ color: C.red }}>{error}</p>}
+      {error && (
+        <p role="alert" style={{ color: C.red }}>
+          {error}
+        </p>
+      )}
       <button disabled={busy} onClick={submit}>
         {busy ? "Posting…" : "Confirm"}
+      </button>
+      <button type="button" onClick={onCancel}>
+        Cancel
       </button>
     </div>
   );

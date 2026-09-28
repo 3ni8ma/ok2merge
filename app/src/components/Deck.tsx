@@ -10,12 +10,13 @@ import { CheckIcon, XIcon } from "./icons";
 export function Deck({
   prs,
   onSwipe,
+  locked = false,
 }: {
   prs: PR[];
   onSwipe: (pr: PR, event: ReviewEvent) => void;
+  locked?: boolean;
 }) {
-  const [locked, setLocked] = useState<number | null>(null);
-  const [top, setTop] = useState(0);
+  const [top] = useState(0);
   const [glow, setGlow] = useState<"none" | "approve" | "reject">("none");
   if (top >= prs.length)
     return <div style={{ color: "#8B949E" }}>No more PRs. Inbox zero.</div>;
@@ -47,7 +48,7 @@ export function Deck({
           ))}
         <motion.div
           key={`${pr.repo}#${pr.number}`}
-          drag="x"
+          drag={locked ? false : "x"}
           dragConstraints={{ left: 0, right: 0 }}
           onDrag={(_, info) => {
             const next =
@@ -63,13 +64,13 @@ export function Deck({
           }}
           onDragEnd={(_, info) => {
             setGlow("none");
-            if (locked !== null) return;
+            if (locked) return;
             const event = gestureToEvent(info.offset.x);
             if (!event) return;
-            setLocked(pr.number);
+            // Do not advance here: the parent removes the PR from `prs`
+            // only after the review posts successfully (onDone). Cancelling
+            // the sheet leaves `top` on the same card so it can be retried.
             onSwipe(pr, event);
-            setTop((t) => t + 1);
-            setLocked(null);
           }}
           animate={{
             boxShadow:
@@ -105,6 +106,26 @@ export function Deck({
           )}
           <PRCard pr={pr} />
         </motion.div>
+      </div>
+      <div role="radiogroup" aria-label="Review decision">
+        <button
+          type="button"
+          style={{ minHeight: 44, minWidth: 44 }}
+          onClick={() => onSwipe(pr, "APPROVE")}
+          aria-label="Approve"
+          disabled={locked}
+        >
+          Approve
+        </button>
+        <button
+          type="button"
+          style={{ minHeight: 44, minWidth: 44 }}
+          onClick={() => onSwipe(pr, "REQUEST_CHANGES")}
+          aria-label="Request changes"
+          disabled={locked}
+        >
+          Request changes
+        </button>
       </div>
     </div>
   );
