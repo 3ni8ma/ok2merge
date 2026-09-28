@@ -25,6 +25,76 @@ interface FileChange {
   deletions: number;
 }
 
+interface ThreadComment {
+  id: number;
+  user: string;
+  avatar?: string | null;
+  body: string;
+  created_at?: string | null;
+}
+
+function ThreadSheet({
+  open,
+  onClose,
+  comments,
+}: {
+  open: boolean;
+  onClose: () => void;
+  comments: ThreadComment[] | null;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="PR comments"
+      style={{
+        position: "fixed",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        maxHeight: "70dvh",
+        overflowY: "auto",
+        background: "#0D1117",
+        borderTop: "1px solid #30363D",
+        borderRadius: "16px 16px 0 0",
+        padding: 16,
+        paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
+        zIndex: 50,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <h3 style={{ margin: 0, flex: 1 }}>Comments</h3>
+        <button onClick={onClose} style={{ minHeight: 44, padding: "6px 12px" }}>
+          Close
+        </button>
+      </div>
+      {comments === null ? (
+        <p style={{ color: C.muted, fontSize: 13 }}>Loading comments…</p>
+      ) : comments.length === 0 ? (
+        <p style={{ color: C.muted, fontSize: 13 }}>No comments yet.</p>
+      ) : (
+        <ul style={{ paddingLeft: 0, listStyle: "none", margin: 0 }}>
+          {comments.map((c) => (
+            <li key={c.id} style={{ marginBottom: 12, fontSize: 13 }}>
+              <span style={{ color: C.muted }}>@{c.user}</span>
+              <p style={{ margin: "4px 0", whiteSpace: "pre-wrap" }}>{c.body}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function PRDetail() {
   const { "*": rest } = useParams();
   const [search] = useSearchParams();
@@ -38,6 +108,8 @@ export default function PRDetail() {
 
   const [files, setFiles] = useState<FileChange[] | null>(null);
   const [checks, setChecks] = useState<CheckRun[] | null>(null);
+  const [comments, setComments] = useState<ThreadComment[] | null>(null);
+  const [threadOpen, setThreadOpen] = useState(false);
   const [reviewer, setReviewer] = useState("");
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(false);
@@ -98,6 +170,15 @@ export default function PRDetail() {
       .catch((e: Error) => {
         if (ctrl.signal.aborted || e?.name === "AbortError") return;
         setChecks([]);
+      });
+    api
+      .comments(`${owner}/${repo}`, Number(n))
+      .then((d) => {
+        if (!ctrl.signal.aborted) setComments(d.comments);
+      })
+      .catch((e: Error) => {
+        if (ctrl.signal.aborted || e?.name === "AbortError") return;
+        setComments([]);
       });
     return () => ctrl.abort();
   }
@@ -306,6 +387,19 @@ export default function PRDetail() {
           </>
         )}
       </div>
+      <div style={{ marginTop: 16 }}>
+        <button
+          onClick={() => setThreadOpen(true)}
+          style={{ minHeight: 44, padding: "6px 12px" }}
+        >
+          View comments ({comments === null ? "…" : comments.length})
+        </button>
+      </div>
+      <ThreadSheet
+        open={threadOpen}
+        onClose={() => setThreadOpen(false)}
+        comments={comments}
+      />
     </div>
   );
 }

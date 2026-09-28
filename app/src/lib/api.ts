@@ -40,6 +40,7 @@ export const api = {
   files: (repo: string, n: number) => authed(`/api/prs/${repo}/${n}/files`),
   checks: (repo: string, n: number, sha: string) =>
     authed(`/api/prs/${repo}/${n}/checks?sha=${sha}`),
+  comments: (repo: string, n: number) => authed(`/api/prs/${repo}/${n}/comments`),
   rerun: (b: object) =>
     authed("/api/prs/rerun", { method: "POST", body: JSON.stringify(b) }),
   reviewers: (b: object) =>

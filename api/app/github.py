@@ -218,6 +218,22 @@ def get_pr_files(token: str, owner_repo: str, n: int, page: int = 1, per_page: i
         ]
 
 
+def get_pr_comments(token: str, owner_repo: str, n: int, per_page: int = 30) -> list:
+    with gh(token) as c:
+        r = c.get(f"/repos/{owner_repo}/issues/{n}/comments", params={"per_page": per_page})
+        gh_raise(r, "comments")
+        return [
+            {
+                "id": m["id"],
+                "user": m["user"]["login"],
+                "avatar": m["user"].get("avatar_url"),
+                "body": (m.get("body") or "")[:500],
+                "created_at": m.get("created_at"),
+            }
+            for m in r.json()
+        ]
+
+
 def merge_pr(token: str, owner_repo: str, n: int) -> dict:
     """Returns {ok, sha} or {ok: False, reason: 'already_merged'} — never raises for 405."""
     with gh(token) as c:

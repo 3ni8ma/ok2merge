@@ -6,6 +6,7 @@ from ..ai import summarize
 from ..deps import get_current_user
 from ..github import (
     get_check_runs,
+    get_pr_comments,
     get_pr_files,
     merge_pr,
     rerun_failed,
@@ -97,6 +98,12 @@ def checks(
 ):
     token = _authed_token(user_id)
     return {"runs": get_check_runs(token, f"{owner}/{repo}", sha)}
+
+
+@router.get("/api/prs/{owner}/{repo}/{n}/comments")
+def comments(owner: str, repo: str, n: int, user_id: str = Depends(get_current_user)):
+    token = _authed_token(user_id)
+    return {"comments": get_pr_comments(token, f"{owner}/{repo}", n)}
 
 
 @router.post("/api/prs/rerun")
