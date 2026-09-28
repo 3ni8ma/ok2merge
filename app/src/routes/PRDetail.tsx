@@ -96,7 +96,15 @@ function ThreadSheet({
 }
 
 export default function PRDetail() {
-  const { "*": rest } = useParams();
+  const {
+    "*": splat,
+    owner: paramOwner,
+    repo: paramRepo,
+    number: paramNumber,
+  } = useParams();
+  // Compat: "/pr/*" splat plus "/pr/:owner/:repo/:number" deep-link alias.
+  const rest =
+    splat ?? (paramOwner ? `${paramOwner}/${paramRepo}/${paramNumber ?? ""}` : "");
   const [search] = useSearchParams();
   const sha = search.get("sha") ?? "";
   const [state, setState] = useState<

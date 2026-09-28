@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import type { PR } from "./InboxDeck";
 import { ageParts, mergeBadge, sizeChip, stateLabel } from "../lib/prDisplay";
+import { parseChecklist } from "../lib/reviewText";
 import { C } from "../theme";
 import { ClockIcon, MessageIcon } from "./icons";
 
@@ -17,10 +18,12 @@ export function PRCard({
   pr,
   onLabelsChange,
   runs,
+  summary,
 }: {
   pr: PR;
   onLabelsChange?: (labels: string[]) => void;
   runs?: Array<{ id?: string | number; name: string; conclusion?: string | null }>;
+  summary?: string;
 }) {
   const age = ageParts(pr.created_at);
   const state = stateLabel(pr);
@@ -29,7 +32,9 @@ export function PRCard({
   const failedRuns = (runs ?? []).filter((r) => r.conclusion === "failure").slice(0, 3);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
+  const [checked, setChecked] = useState<boolean[]>([]);
   const labels = pr.labels ?? [];
+  const checklist = summary ? parseChecklist(summary) : [];
   return (
     <div
       style={{
@@ -174,6 +179,37 @@ export function PRCard({
                 + label
               </button>
             ))}
+        </div>
+      )}
+      {checklist.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          {checklist.map((item, i) => (
+            <label
+              key={`${item}-${i}`}
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                fontSize: 12,
+                color: C.paper,
+                minHeight: 44,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={checked[i] ?? false}
+                onChange={() =>
+                  setChecked((prev) => {
+                    const next = [...prev];
+                    next[i] = !next[i];
+                    return next;
+                  })
+                }
+                style={{ width: 20, height: 20 }}
+              />
+              {item}
+            </label>
+          ))}
         </div>
       )}
     </div>

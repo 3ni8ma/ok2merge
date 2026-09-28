@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { newReviewKey } from "../lib/idempotency";
 import { buzz, confirmHuman } from "../lib/native";
+import { CANNED_REPLIES } from "../lib/reviewText";
 import { C } from "../theme";
 import type { PR, ReviewEvent } from "./InboxDeck";
 
@@ -69,14 +70,17 @@ export function ReviewSheet({
     >
       <p style={{ color: C.paper }}>{confirmText(event, ref)}</p>
       <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-        {(event === "APPROVE"
-          ? ["LGTM — nice work", "Approved with nits"]
-          : ["Needs changes — see comments", "Blocking: tests failing"]
-        ).map((preset) => (
+        {CANNED_REPLIES.map((preset) => (
           <button
             key={preset}
             onClick={() => setBody(preset)}
-            style={{ background: "#0D1117", color: C.paper, fontSize: 13 }}
+            style={{
+              background: "#0D1117",
+              color: C.paper,
+              fontSize: 13,
+              minHeight: 44,
+              padding: "6px 12px",
+            }}
           >
             {preset}
           </button>

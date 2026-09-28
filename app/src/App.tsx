@@ -23,6 +23,7 @@ export default function App() {
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/paywall" element={<Paywall />} />
+          <Route path="/pr/:owner/:repo/:number" element={<PRDetail />} />
           <Route path="/pr/*" element={<PRDetail />} />
           <Route path="/" element={<Inbox />} />
         </Routes>
